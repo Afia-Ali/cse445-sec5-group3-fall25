@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 1
+names: ['road-lanes']
+
+roboflow:
+  workspace: drishtiobjectdetection
+  project: road-lanes-800cc-gbotp
+  version: 1
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/drishtiobjectdetection/road-lanes-800cc-gbotp/dataset/1
