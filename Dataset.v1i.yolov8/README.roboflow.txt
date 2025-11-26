@@ -1,8 +1,8 @@
 
-road lanes - v1 2025-10-07 3:57pm
+road lanes - v1 2025-10-16 3:57pm
 ==============================
 
-This dataset was exported via roboflow.com on October 07, 2025 at 9:57 AM GMT
+This dataset was exported via roboflow.com on October 16, 2025 at 9:57 AM GMT
 
 Roboflow is an end-to-end computer vision platform that helps you
 * collaborate with your team on computer vision projects
