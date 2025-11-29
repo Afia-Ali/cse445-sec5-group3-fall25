@@ -1,0 +1,126 @@
+# ------------------------------
+# STEP 0: Install YOLOv8
+# ------------------------------
+!pip install ultralytics --quiet
+
+# ------------------------------
+# STEP 1: Upload & Unzip Dataset
+# ------------------------------
+from google.colab import files
+import zipfile
+import os
+
+# Upload your dataset zip
+uploaded = files.upload()  # select Dataset.v1i.yolov8.zip
+
+# Unzip into /dataset
+zip_filename = list(uploaded.keys())[0]
+with zipfile.ZipFile(zip_filename, 'r') as zip_ref:
+    zip_ref.extractall("dataset")
+
+# Detect top-level folder inside dataset
+top_level_folders = [f for f in os.listdir("dataset") 
+                     if os.path.isdir(os.path.join("dataset", f))]
+
+dataset_path = os.path.join("dataset", top_level_folders[0])
+print("Dataset path detected:", dataset_path)
+print("Folders inside dataset:", os.listdir(dataset_path))
+
+# Check images
+print("Train images:", len(os.listdir(f"{dataset_path}/train/images")))
+print("Validation images:", len(os.listdir(f"{dataset_path}/valid/images")))
+print("Test images:", len(os.listdir(f"{dataset_path}/test/images")))
+
+# ------------------------------
+# STEP 2: Train YOLOv8 Detection Model
+# ------------------------------
+from ultralytics import YOLO
+
+
+model = YOLO("yolov8n.pt")
+
+model.train(
+    data=f"{dataset_path}/data.yaml",  # correct
+    epochs=50,
+    imgsz=640,
+    batch=8,
+)
+
+# ------------------------------
+# STEP 3: Test Detection on a Single Image
+# ------------------------------
+import cv2
+
+# Pick a test image
+test_img = f"{dataset_path}/test/images/{os.listdir(dataset_path+'/test/images')[0]}"
+results = model.predict(test_img)
+results.show()
+
+# Turn prediction logic for a single image
+img = cv2.imread(test_img)
+h, w, _ = img.shape
+
+# Get bounding boxes (x_min, y_min, x_max, y_max)
+boxes = results[0].boxes.xyxy.cpu().numpy() if len(results[0].boxes) > 0 else []
+
+if len(boxes) > 0:
+    lane_centers = (boxes[:,0] + boxes[:,2]) / 2
+    avg_lane_center = lane_centers.mean()
+    if avg_lane_center < w/3:
+        turn = "LEFT"
+    elif avg_lane_center > 2*w/3:
+        turn = "RIGHT"
+    else:
+        turn = "STRAIGHT"
+else:
+    turn = "STRAIGHT"
+
+print("Predicted turn:", turn)
+
+# ------------------------------
+# STEP 4: Predict Turns on a Video
+# ------------------------------
+# Upload your video if you want to test
+uploaded_videos = files.upload()  # e.g., test_video.mp4
+video_filename = list(uploaded_videos.keys())[0]
+
+cap = cv2.VideoCapture(video_filename)
+
+while cap.isOpened():
+    ret, frame = cap.read()
+    if not ret:
+        break
+
+    # Predict lanes
+    results = model.predict(frame)
+    boxes = results[0].boxes.xyxy.cpu().numpy() if len(results[0].boxes) > 0 else []
+    h, w, _ = frame.shape
+
+    # Turn logic
+    if len(boxes) > 0:
+        lane_centers = (boxes[:,0] + boxes[:,2]) / 2
+        avg_lane_center = lane_centers.mean()
+        if avg_lane_center < w/3:
+            turn = "LEFT"
+        elif avg_lane_center > 2*w/3:
+            turn = "RIGHT"
+        else:
+            turn = "STRAIGHT"
+    else:
+        turn = "STRAIGHT"
+
+    # Display turn on frame
+    cv2.putText(frame, f"Turn: {turn}", (50,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
+    cv2.imshow("Lane Prediction", frame)
+
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+cap.release()
+cv2.destroyAllWindows()
+
+# ------------------------------
+# STEP 5: Save Model for Deployment
+# ------------------------------
+model.export(format="onnx")  # for deployment
+model.save("road_lane_model.pt")
