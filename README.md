@@ -6,5 +6,6 @@ Lane detection - Implementation of road lane detection using a lightweight YOLOv
 Obstacle detection - Detection of moving vehicles surrounding the car in order to improve situational awareness and safety.
 
 Turn prediction - A decision-making module using YOLOv8n that determines whether the vehicle should move forward, turn left, or turn right based on detected lanes and objects.
+
 Custom datasets created using Roboflow to improve detection accuracy for training. To evaluate the system’s performance under controlled conditions and identify limitations.
 
